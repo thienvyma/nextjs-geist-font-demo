@@ -1,0 +1,66 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:/tmp/dev.db"
+}
+
+model Agent {
+  id              Int           @id @default(autoincrement())
+  name            String
+  description     String
+  status          String        @default("inactive") // active or inactive
+  platform        String        @default("Website")
+  conversations   Int           @default(0)
+  lastActive      DateTime      @default(now())
+  model           String
+  systemPrompt    String
+  trainingData    String?
+  llmProvider     String
+  llmModel        String
+  apiKey          String        @unique
+  webhookUrl      String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  Conversation    Conversation[]
+  ProcessedData   ProcessedData[]
+}
+
+model Conversation {
+  id        Int      @id @default(autoincrement())
+  agentId   Int
+  agent     Agent    @relation(fields: [agentId], references: [id])
+  messages  Message[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Message {
+  id             Int          @id @default(autoincrement())
+  conversationId Int
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  role           String       // user or assistant
+  content        String
+  createdAt      DateTime     @default(now())
+}
+
+model ProcessedData {
+  id          String   @id @default(cuid())
+  content     String
+  type        String   // text, qa, or conversation
+  metadata    Json
+  agentId     Int
+  agent       Agent    @relation(fields: [agentId], references: [id])
+  version     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tokens      Int?     // Optional token count
+
+  @@index([agentId, version])
+  @@index([type])
+}
